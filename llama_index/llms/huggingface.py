@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence,
 
 from llama_index.bridge.pydantic import Field, PrivateAttr
 from llama_index.callbacks import CallbackManager
+from llama_index.constants import DEFAULT_CONTEXT_WINDOW, DEFAULT_NUM_OUTPUTS
 from llama_index.llms import ChatResponseAsyncGen, CompletionResponseAsyncGen
 from llama_index.llms.base import (
     LLM,
@@ -406,6 +407,25 @@ class HuggingFaceInferenceAPI(LLM):
     _sync_client: "InferenceClient" = PrivateAttr()
     _async_client: "AsyncInferenceClient" = PrivateAttr()
 
+    context_window: int = Field(
+        default=DEFAULT_CONTEXT_WINDOW,
+        description=LLMMetadata.__fields__["context_window"].field_info.description,
+    )
+    num_output: int = Field(
+        default=DEFAULT_NUM_OUTPUTS,
+        description=LLMMetadata.__fields__["num_output"].field_info.description,
+    )
+    is_chat_model: bool = Field(
+        default=False,
+        description=LLMMetadata.__fields__["is_chat_model"].field_info.description,
+    )
+    is_function_calling_model: bool = Field(
+        default=False,
+        description=(
+            LLMMetadata.__fields__["is_function_calling_model"].field_info.description
+        ),
+    )
+
     def _get_inference_client_kwargs(self) -> Dict[str, Any]:
         """Extract the Hugging Face InferenceClient construction parameters."""
         return {
@@ -455,7 +475,13 @@ class HuggingFaceInferenceAPI(LLM):
 
     @property
     def metadata(self) -> LLMMetadata:
-        raise NotImplementedError
+        return LLMMetadata(
+            context_window=self.context_window,
+            num_output=self.num_output,
+            is_chat_model=self.is_chat_model,
+            is_function_calling_model=self.is_function_calling_model,
+            model_name=self.model_name,
+        )
 
     def chat(self, messages: Sequence[ChatMessage], **kwargs: Any) -> ChatResponse:
         return conversational_output_to_chat_response(
